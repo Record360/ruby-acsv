@@ -15,7 +15,7 @@ module ACSV
     # @see http://www.ruby-doc.org/stdlib/libdoc/csv/rdoc/CSV.html#method-c-new
     def initialize(data, options = Hash.new)
       options[:col_sep] ||= ACSV::Detect.separator(data)
-      super(data, options)
+      super(data, **options)
     end
 
     # This method opens an IO object, and wraps that with CSV. For reading, separator
@@ -31,15 +31,13 @@ module ACSV
     # @option args [String] :method try only specific method, one of {ACSV::Detect.encoding_methods}
     # @see ACSV::Detect.encoding
     # @see http://www.ruby-doc.org/stdlib/libdoc/csv/rdoc/CSV.html#method-c-open
-    def self.open(*args)
-      # find the +options+ Hash
-      options = if args.last.is_a? Hash then args.pop else Hash.new end
+    def self.open(*args, **options)
       # auto-detect encoding unless external encoding is specified
       full_mode = args[1] || 'rb'
       mode, ext_enc, int_enc = full_mode.split(':')
       if (ext_enc.nil? || ext_enc=='') && options[:encoding].nil? && options[:external_encoding].nil?
         # try to detect encoding
-        if ext_enc = ACSV::Detect.encoding(File.open(args[0], mode, options), options)
+        if ext_enc = ACSV::Detect.encoding(File.open(args[0], mode, **options), options)
           # workaround for http://stackoverflow.com/a/20723346
           ext_enc = "BOM|#{ext_enc}" if ext_enc =~ /UTF/
           # create new mode specification if there was one, else store in option
@@ -54,12 +52,12 @@ module ACSV
           end
         end
       end
+
       # remove options CSV doesn't understand
       options.delete :confidence
       options.delete :method
-      # to superclass
-      args << options
-      super(*args)
+
+      super(*args, **options)
     end
   end
 end
